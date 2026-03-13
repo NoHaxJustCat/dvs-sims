@@ -23,6 +23,50 @@ from modes_conditions import *
 
 from datetime import datetime
 
+def propagate_single(args):
+    """Worker function for a single orbit propagation."""
+    (eccentricity, inclination, semiMajorAxis,
+     propDurationTime, timeStep, propStartTime,
+     tumblingPowers, propagationDir, scMass) = args
+
+    propagation_file = propagationDir + f"ecc_{eccentricity}_inc_{inclination}_a_{semiMajorAxis}.npz"
+
+    if os.path.exists(propagation_file):
+        propagation_data = np.load(propagation_file)
+        stateArr = propagation_data["stateArr"]
+        dependentArr = propagation_data["dependentArr"]
+    else:
+        # Each worker needs its own bodies instance — tudat objects aren't picklable
+        bodies_local = create_bodies(
+            sc_mass=scMass,
+            initial_att=np.eye(3),
+            rotation=True,
+            starting_time=propStartTime,
+            time_step=timeStep
+        )
+        bodies_local = create_rotational_settings(bodies=bodies_local, time_step=timeStep)
+
+        _, _, stateArr, dependentArr = propagate_orbit(
+            propDurationTime=propDurationTime,
+            timeStep=timeStep,
+            stateStartKep=np.array([
+                semiMajorAxis, eccentricity, inclination,
+                np.deg2rad(0), np.deg2rad(0), np.deg2rad(0)
+            ]),
+            propStartTime=propStartTime,
+            bodies=bodies_local
+        )
+        np.savez(propagation_file, stateArr=stateArr, dependentArr=dependentArr)
+
+    orbitAvg = orbit_average(
+        stateArr=stateArr,
+        dependentArr=dependentArr,
+        tumblingPowers=tumblingPowers,
+        tumblingCheck=True,
+    )
+
+    return (eccentricity, inclination, semiMajorAxis, orbitAvg)
+
 if __name__ == "__main__":
 
     # power data
