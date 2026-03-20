@@ -136,8 +136,13 @@ def orbit_average(
 
     # Calculates average of power production through orbit considering the 
     # last index in the array. Should ensure same number of orbits considered
-    # for all averages. 
-    orbitAvg = np.average(powerSolar[:indx[-1,0]])
+    # for all averages.
+    if len(indx) > 0:
+        # Complete orbit found - use data up to first 360° crossing
+        orbitAvg = np.average(powerSolar[:indx[-1,0]])
+    else:
+        # No complete orbit found - use all available data
+        orbitAvg = np.average(powerSolar) if len(powerSolar) > 0 else 0.0
 
     return orbitAvg
 

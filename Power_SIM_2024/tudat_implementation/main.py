@@ -11,9 +11,16 @@ can/should be expanded):
 - Tomás Reis (2025) - tomas.qreis@gmail.com
 """
 
+# WINDOWS FIX: Set environment variables BEFORE importing scientific packages
+# This resolves Windows fatal exception 0xc06d007f caused by MKL threading
+import os
+os.environ['MKL_THREADING_LAYER'] = 'SEQUENTIAL'
+os.environ['MKL_NUM_THREADS'] = '1'
+os.environ['NUMEXPR_NUM_THREADS'] = '1'
+os.environ['OMP_NUM_THREADS'] = '1'
+
 import matplotlib.pyplot as plt
 from concurrent.futures import ProcessPoolExecutor, as_completed
-import os
 import numpy as np
 
 from tudat_setup import * 
@@ -68,6 +75,10 @@ def propagate_single(args):
     return (eccentricity, inclination, semiMajorAxis, orbitAvg)
 
 if __name__ == "__main__":
+
+    # Get the directory where this script is located
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    os.chdir(script_dir)  # Change to script directory to ensure relative paths work
 
     # power data
     dataDir = f"data/"
@@ -185,7 +196,7 @@ if __name__ == "__main__":
         ]
 
         # Run propagations in parallel.
-        max_workers = os.cpu_count()
+        max_workers = min(os.cpu_count() or 1, 61)  # Cap at 61 (ProcessPoolExecutor limit on Windows)
         with ProcessPoolExecutor(max_workers=max_workers) as executor:
             futures = {executor.submit(propagate_single, args): args for args in all_args}
             for future in as_completed(futures):
@@ -219,7 +230,7 @@ if __name__ == "__main__":
     dataDir = "data_battery/"
     # Runs battery charge orbit propagation.
     # TODO: Turn this into an isolated function
-    if batteryChargeProp := False:
+    if batteryChargeProp := True:
 
         ### Propagation parameters.
         # Initial keplerian elements. Formatted as array for easy saving later.
@@ -309,7 +320,7 @@ if __name__ == "__main__":
         )
 
     ### Plots battery charge vs time.
-    if batteryChargePlots := False:
+    if batteryChargePlots := True:
         plot_battery_charge(
             dataDir         = dataDir,
             battMax         = battMax,

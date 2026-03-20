@@ -82,6 +82,8 @@ def plot_average_heatmap(
         fig.tight_layout()
 
         fig.savefig(plotsDir + f"eccentricity{eccentricity}_orbitAvg.png")
+        plt.show()  # Display the plot
+        plt.close(fig)  # Close the figure to free memory
 
 def plot_battery_charge(
         dataDir: str,

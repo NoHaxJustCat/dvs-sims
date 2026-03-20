@@ -1,3 +1,11 @@
+# WINDOWS FIX: Set environment variables BEFORE importing scientific packages
+# This resolves Windows fatal exception 0xc06d007f caused by MKL threading
+import os
+os.environ['MKL_THREADING_LAYER'] = 'SEQUENTIAL'
+os.environ['MKL_NUM_THREADS'] = '1'
+os.environ['NUMEXPR_NUM_THREADS'] = '1'
+os.environ['OMP_NUM_THREADS'] = '1'
+
 import numpy as np
 import math
 
